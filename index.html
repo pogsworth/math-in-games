@@ -479,6 +479,7 @@
                                 <button id="animModePose" class="btn-outline active" onclick="setFrame5Mode('pose')">Static Pose Rig</button>
                                 <button id="animModeWalk" class="btn-outline" onclick="setFrame5Mode('walk')">Walk Loop</button>
                                 <button id="animModeFloss" class="btn-outline" onclick="setFrame5Mode('floss')">🕺 FLOSS DANCE</button>
+                                <button id="animModeWave" class="btn-outline" onclick="setFrame5Mode('wave')">👋 WAVE</button>
                             </div>
                         </div>
                         <div class="control-row" id="manualBoneRow">
@@ -496,7 +497,7 @@
                                 <option value="rightKnee">Right Knee Joint</option>
                             </select>
                             <label for="slideBone5" style="margin-top: 10px;">Joint Transformation Angle: <span id="valBone5" class="highlight-green">0°</span></label>
-                            <input type="range" id="slideBone5" min="-120" max="120" value="0">
+                            <input type="range" id="slideBone5" min="-200" max="200" value="0">
                         </div>
                     </div>
                     <div class="telemetry-box" id="telemetry5">Initializing data system...</div>
@@ -691,7 +692,7 @@
             let localNoseX = 30;
             let localNoseY = 0;
             
-            let activeRenderRad = f2Reflected ? -rotRad : rotRad;
+            let activeRenderRad = rotRad;
 
             f2Laser.startX = tx + (localNoseX * Math.cos(activeRenderRad) - localNoseY * Math.sin(activeRenderRad));
             f2Laser.startY = ty + (localNoseX * Math.sin(activeRenderRad) + localNoseY * Math.cos(activeRenderRad));
@@ -1010,6 +1011,7 @@
             document.getElementById('animModePose').classList.remove('active');
             document.getElementById('animModeWalk').classList.remove('active');
             document.getElementById('animModeFloss').classList.remove('active');
+            document.getElementById('animModeWave').classList.remove('active');
             
             cancelAnimationFrame(f5AnimId);
 
@@ -1022,6 +1024,7 @@
             } else {
                 if (mode === 'walk') document.getElementById('animModeWalk').classList.add('active');
                 if (mode === 'floss') document.getElementById('animModeFloss').classList.add('active');
+                if (mode === 'wave') document.getElementById('animModeWave').classList.add('active');
                 document.getElementById('manualBoneRow').style.opacity = "0.3";
                 document.getElementById('manualBoneRow').style.pointerEvents = "none";
                 animateFrame5Loop();
@@ -1050,63 +1053,99 @@
             let rigRootY = 180;
 
             if (f5Mode === 'walk') {
-                // Procedural Trigonometric Walk Cycle Matching Phase Offsets
-                let angleSwing = Math.sin(f5Time) * 35;
-                
-                f5SkeletonAngles.hips = 0;
-                f5SkeletonAngles.spine = Math.sin(f5Time * 2) * 4;
-                rigRootY += Math.abs(Math.sin(f5Time * 2)) * 6 - 3; // head bob displacement
+                // Side-view walk cycle: the figure faces RIGHT and walks in place.
+                // One phase angle (t) drives every limb through sine/cosine waves.
+                let t = f5Time * 1.5;          // walk cadence (~1 stride per second)
+                let s = Math.sin(t);
 
-                f5SkeletonAngles.leftHip = angleSwing;
-                f5SkeletonAngles.leftKnee = Math.max(0, -angleSwing * 1.2);
-                f5SkeletonAngles.rightHip = -angleSwing;
-                f5SkeletonAngles.rightKnee = Math.max(0, angleSwing * 1.2);
+                let thighSwing = 32;           // how far the legs swing front-to-back
+                let kneeFlex   = 48;           // how much the knee bends mid-stride
+                let armSwing    = 28;          // arms counter-swing to the legs
 
-                f5SkeletonAngles.leftShoulder = -angleSwing * 0.8;
-                f5SkeletonAngles.leftElbow = 15 + Math.sin(f5Time) * 15;
-                f5SkeletonAngles.rightShoulder = angleSwing * 0.8;
-                f5SkeletonAngles.rightElbow = 15 - Math.sin(f5Time) * 15;
+                // Torso leans forward a touch; body bobs DOWN when the legs are
+                // splayed apart (both feet planted) and rises at mid-stance.
+                f5SkeletonAngles.hips  = 0;
+                f5SkeletonAngles.spine = 8;
+                rigRootY += Math.abs(s) * 7 - 3;
 
-                updateFrame5Telemetry("Walk cycle running thread. Phase-shifted trigonometric outputs driving hips position and limbs variables.");
-            } 
+                // Legs scissor: the rig mirrors left/right signs, so feeding both
+                // hips the SAME value swings one leg forward while the other goes back.
+                f5SkeletonAngles.rightHip = thighSwing * s;
+                f5SkeletonAngles.leftHip  = thighSwing * s;
+
+                // Each knee bends only while its leg is swinging forward (cos>0 for the
+                // right leg, cos<0 for the left), tucking the foot back under the body.
+                f5SkeletonAngles.rightKnee = -kneeFlex * Math.max(0,  Math.cos(t));
+                f5SkeletonAngles.leftKnee  =  kneeFlex * Math.max(0, -Math.cos(t));
+
+                // Arms swing opposite to the legs (right arm back as right leg steps forward).
+                f5SkeletonAngles.rightShoulder = -armSwing * s;
+                f5SkeletonAngles.leftShoulder  = armSwing * s;
+                f5SkeletonAngles.rightElbow =  -25;
+                f5SkeletonAngles.leftElbow  = -25;
+
+                updateFrame5Telemetry("Side-view walk cycle. One sine wave swings the thighs front-to-back; a cosine wave bends each knee during its forward swing. Arms run on the opposite phase.");
+            }
             else if (f5Mode === 'floss') {
-                // GRAND FINALE: The Fortnite Floss Dance
-                let swayCycle = Math.sin(f5Time); 
-                
-                // Hip shifts side-to-side dynamically
-                rigRootX += swayCycle * 25;
-                f5SkeletonAngles.hips = -swayCycle * 15; // rotate hip base opposite to sway line
-                f5SkeletonAngles.spine = swayCycle * 8;
+                // GRAND FINALE: Floss Dance — wide hip sway over planted feet, near-straight
+                // knees, head held still, arms swinging low and flicking at the elbows.
+                let phase = f5Time * 3.0;               // faster cadence
+                let sway  = Math.sin(phase) * 26;       // how far the hips slide left/right
+                let armDir = Math.sin(phase);          // arms point opposite the hips (+ = pointing right)
+                const centerX = 250, L = 40, footSpread = 20;
+                const groundY = 258;                    // floor height where the feet stay
+                const D = 79.7;                          // target leg length (of 80) → knees stay nearly straight
 
-                // Arm swinging loop logic variables parameters
-                // Hands go from left to right across hips in the OPPOSITE direction of movement from hips
-                let armSwingPhase = Math.sin(f5Time + Math.PI/2); 
-                
-                // Track arm positioning constraints depending on which side of the body the sway loops over
-                if(swayCycle > 0) {
-                    // Left leaning swing posture context: both arms throw leftward
-                    f5SkeletonAngles.leftShoulder = 60 + armSwingPhase * 20;
-                    f5SkeletonAngles.leftElbow = -10;
-                    f5SkeletonAngles.rightShoulder = 80 + armSwingPhase * 15;
-                    f5SkeletonAngles.rightElbow = 40;
-                } else {
-                    // Right leaning swing posture context: both arms throw rightward
-                    f5SkeletonAngles.leftShoulder = -80 + armSwingPhase * 15;
-                    f5SkeletonAngles.leftElbow = -40;
-                    f5SkeletonAngles.rightShoulder = -60 + armSwingPhase * 20;
-                    f5SkeletonAngles.rightElbow = 10;
-                }
+                // Hips dip slightly toward the sides so each leg keeps the SAME near-full length
+                // throughout the sway — that's what lets us sway far without bending the knees.
+                let hipsY = groundY - Math.sqrt(D * D - sway * sway);
+                rigRootX = centerX + sway;
+                rigRootY = hipsY;                        // draw must use the same hip height the IK assumes
 
-                // Small foot bounces matching rhythm metrics loops
-                f5SkeletonAngles.leftHip = 10 + swayCycle * 5;
-                f5SkeletonAngles.leftKnee = 15 - Math.abs(swayCycle) * 10;
-                f5SkeletonAngles.rightHip = -10 + swayCycle * 5;
-                f5SkeletonAngles.rightKnee = 15 - Math.abs(swayCycle) * 10;
+                // Feet stay nailed to the floor; IK keeps the near-straight knees following the hips.
+                let lIK = solveLegIK(rigRootX - 20, hipsY, centerX - footSpread, groundY, L, false);
+                let rIK = solveLegIK(rigRootX + 20, hipsY, centerX + footSpread, groundY, L, true);
+                f5SkeletonAngles.leftHip  = lIK.hip;  f5SkeletonAngles.leftKnee  = lIK.knee;
+                f5SkeletonAngles.rightHip = rIK.hip;  f5SkeletonAngles.rightKnee = rIK.knee;
 
-                updateFrame5Telemetry("<span class='highlight-pink'>GRAND FINALE ACTIVE:</span> Counter-phase matrix swaying. Hips horizontal translation is synchronized opposite to arm vector trajectories.");
+                // Lean the spine to cancel the hip slide so the HEAD stays motionless.
+                f5SkeletonAngles.hips  = 0;
+                let spineDeg = Math.asin(-sway / 85) * 180 / Math.PI;
+                f5SkeletonAngles.spine = spineDeg;
+
+                // Arms swing together, counter to the hips, staying LOW. Subtracting the spine lean
+                // measures each arm's swing against vertical (screen space) instead of the tilted
+                // spine — otherwise the tilt makes the right arm travel farther than the left.
+                // The elbows flick in the sway direction (forearms point right when swaying right).
+                f5SkeletonAngles.rightShoulder =  75 * armDir;  // - spineDeg;
+                f5SkeletonAngles.leftShoulder  =  75 * armDir;  // mirror of right arm      spineDeg - 
+                f5SkeletonAngles.rightElbow    =  16 * armDir;
+                f5SkeletonAngles.leftElbow     =  16 * armDir;
+
+                updateFrame5Telemetry("<span class='highlight-pink'>GRAND FINALE ACTIVE:</span> The hips sway wide and dip slightly so the planted legs stay near full length (knees nearly straight). The spine leans to hold the head still, and the arms swing low as a pair counter to the hips, with the forearms flicking in the sway direction.");
             }
 
-            drawSkeletonRig(rigRootX, rigRootY);
+            else if (f5Mode === 'wave') {
+                // Friendly goodbye: stand still and wave the right arm overhead.
+                f5SkeletonAngles.hips  = 0;
+                f5SkeletonAngles.spine = Math.sin(f5Time * 1.5) * 3;   // gentle body sway
+
+                // Legs stand straight.
+                f5SkeletonAngles.leftHip = 0;  f5SkeletonAngles.leftKnee = 0;
+                f5SkeletonAngles.rightHip = 0; f5SkeletonAngles.rightKnee = 0;
+
+                // Left arm rests down at the side.
+                f5SkeletonAngles.leftShoulder = 12;
+                f5SkeletonAngles.leftElbow = 12;
+
+                // Right arm raised overhead; the forearm swings side to side at the elbow.
+                f5SkeletonAngles.rightShoulder = -120;
+                f5SkeletonAngles.rightElbow = Math.sin(f5Time * 2.5) * 32-40;
+
+                updateFrame5Telemetry("<span class='highlight-green'>Thanks for watching!</span> The right shoulder is rotated up overhead, and the elbow joint swings back and forth with a sine wave to wave goodbye.");
+            }
+
+            drawSkeletonRig(rigRootX, rigRootY, f5Mode === 'walk', f5Mode === 'floss');
             f5AnimId = requestAnimationFrame(animateFrame5Loop);
         }
 
@@ -1124,7 +1163,31 @@
             `;
         }
 
-        function drawSkeletonRig(rootX, rootY) {
+        // Two-bone leg IK: given a hip position and a fixed foot target, solve the
+        // hip + knee angles (in the rig's own convention) so the foot lands on target.
+        // Lets the hips move while the feet stay planted on the floor.
+        function solveLegIK(hipX, hipY, footX, footY, L, isRight) {
+            let dx = footX - hipX, dy = footY - hipY;
+            let d = Math.min(Math.hypot(dx, dy), 2 * L - 0.01);
+            let angleH = Math.acos(Math.max(-1, Math.min(1, d / (2 * L)))); // law of cosines
+            let baseAng = Math.atan2(dy, dx);
+            let side = isRight ? -1 : 1;            // bow the knees outward
+            let kneeAng = baseAng + side * angleH;
+            let kneeX = hipX + L * Math.cos(kneeAng);
+            let kneeY = hipY + L * Math.sin(kneeAng);
+
+            let hipAngle, kneeRel;
+            if (isRight) {
+                hipAngle = Math.atan2((kneeX - hipX), (kneeY - hipY));
+                kneeRel  = Math.atan2((footX - kneeX), (footY - kneeY)) - hipAngle;
+            } else {
+                hipAngle = Math.atan2(-(kneeX - hipX), (kneeY - hipY));
+                kneeRel  = Math.atan2(-(footX - kneeX), (footY - kneeY)) - hipAngle;
+            }
+            return { hip: hipAngle * 180 / Math.PI, knee: kneeRel * 180 / Math.PI };
+        }
+
+        function drawSkeletonRig(rootX, rootY, sideView = false, levelShoulders = false) {
             ctx5.lineWidth = 5;
             ctx5.lineCap = "round";
 
@@ -1134,26 +1197,32 @@
             // Global Base Root Anchor Linkage Matrix Point (Hips Center)
             let hipsX = rootX;
             let hipsY = rootY;
+            let hipsAngle = rRad(f5SkeletonAngles.hips); // pelvis = ROOT: rotates the whole figure
 
             // Compute Pelvis / Hip Width Horizon offsets line
-            let hipWidth = 20;
+            // Side view collapses the width so near/far legs overlap as a profile
+            let hipWidth = sideView ? 7 : 20;
             let lHipRootX = hipsX - hipWidth;
             let lHipRootY = hipsY;
             let rHipRootX = hipsX + hipWidth;
             let rHipRootY = hipsY;
 
             // 1. EVALUATE SPINE TRANSFORMATION MATRIX (Parent of Neck, Shoulders, Head)
-            let spineAngle = rRad(f5SkeletonAngles.hips + f5SkeletonAngles.spine);
+            let spineAngle = rRad(f5SkeletonAngles.spine); // chest bend only (hips handled at the root)
             let spineLength = 65;
             let neckX = hipsX + spineLength * Math.sin(spineAngle);
             let neckY = hipsY - spineLength * Math.cos(spineAngle);
 
             // Compute Shoulder horizon line positions offset from top spine neck center point
-            let shoulderWidth = 25;
-            let lShoulderX = neckX - shoulderWidth * Math.cos(spineAngle);
-            let lShoulderY = neckY - shoulderWidth * Math.sin(spineAngle);
-            let rShoulderX = neckX + shoulderWidth * Math.cos(spineAngle);
-            let rShoulderY = neckY + shoulderWidth * Math.sin(spineAngle);
+            let shoulderWidth = sideView ? 9 : 25;
+            // Normally the shoulder bar rides perpendicular to the spine (so it tilts when the
+            // spine leans). levelShoulders pivots it back to horizontal regardless of the lean.
+            let shCos = levelShoulders ? 1 : Math.cos(spineAngle);
+            let shSin = levelShoulders ? 0 : Math.sin(spineAngle);
+            let lShoulderX = neckX - shoulderWidth * shCos;
+            let lShoulderY = neckY - shoulderWidth * shSin;
+            let rShoulderX = neckX + shoulderWidth * shCos;
+            let rShoulderY = neckY + shoulderWidth * shSin;
 
             // Head extension joint offset
             let headLength = 20;
@@ -1161,6 +1230,8 @@
             let headY = neckY - headLength * Math.cos(spineAngle);
 
             // 2. INHERIT LEFT ARM CHAIN TRANSFORMATIONS (Shoulder -> Elbow -> Hand)
+            // Bones use the (-sin, +cos) convention so that ADDING the parent's angle rotates the
+            // limb the SAME direction the spine turns — that keeps the arm rigid with the shoulder.
             let lShoulderAngle = spineAngle + rRad(f5SkeletonAngles.leftShoulder);
             let armLength = 35;
             let lElbowX = lShoulderX - armLength * Math.sin(lShoulderAngle);
@@ -1171,12 +1242,14 @@
             let lHandY = lElbowY + armLength * Math.cos(lElbowAngle);
 
             // 3. INHERIT RIGHT ARM CHAIN TRANSFORMATIONS (Shoulder -> Elbow -> Hand)
+            // Same (-sin, +cos) convention as the left arm; the mirror comes from the opposite
+            // sign of the right-side joint angles, not from flipping the rotation direction.
             let rShoulderAngle = spineAngle + rRad(f5SkeletonAngles.rightShoulder);
-            let rElbowX = rShoulderX + armLength * Math.sin(rShoulderAngle);
+            let rElbowX = rShoulderX - armLength * Math.sin(rShoulderAngle);
             let rElbowY = rShoulderY + armLength * Math.cos(rShoulderAngle);
 
             let rElbowAngle = rShoulderAngle + rRad(f5SkeletonAngles.rightElbow);
-            let rHandX = rElbowX + armLength * Math.sin(rElbowAngle);
+            let rHandX = rElbowX - armLength * Math.sin(rElbowAngle);
             let rHandY = rElbowY + armLength * Math.cos(rElbowAngle);
 
             // 4. INHERIT LEFT LEG CHAIN TRANSFORMATIONS (Hip -> Knee -> Foot)
@@ -1188,7 +1261,7 @@
             let lKneeAngle = lHipAngle + rRad(f5SkeletonAngles.leftKnee);
             let lFootX = lKneeX - legLength * Math.sin(lKneeAngle);
             let lFootY = lKneeY + legLength * Math.cos(lKneeAngle);
-            let lToeX = lFootX - 12; // Flat foot profile lines
+            let lToeX = lFootX + (sideView ? 12 : -12); // Flat foot profile lines (both point forward in side view)
             let lToeY = lFootY;
 
             // 5. INHERIT RIGHT LEG CHAIN TRANSFORMATIONS (Hip -> Knee -> Foot)
@@ -1203,6 +1276,14 @@
             let rToeY = rFootY;
 
             // --- DRAW SECTIONS BLOCK ---
+            // The hips are the ROOT joint: rotate the ENTIRE figure (torso AND legs) about the
+            // pelvis center so every limb inherits the hip rotation rigidly. The spine bend above
+            // then affects only the chest and up.
+            ctx5.save();
+            ctx5.translate(hipsX, hipsY);
+            ctx5.rotate(hipsAngle);
+            ctx5.translate(-hipsX, -hipsY);
+
             ctx5.strokeStyle = '#38bdf8'; // Blue bone segments color
             
             // Draw Hips Base Bar Leg horizon lines
@@ -1250,6 +1331,8 @@
             // Draw Head circle bubble outline layout
             ctx5.fillStyle = '#111827'; ctx5.strokeStyle = '#4ade80'; ctx5.lineWidth = 4;
             ctx5.beginPath(); ctx5.arc(headX, headY - 18, 18, 0, Math.PI*2); ctx5.fill(); ctx5.stroke();
+
+            ctx5.restore(); // end hip-root rotation
         }
 
         // Global Bootstrapper Initializer
