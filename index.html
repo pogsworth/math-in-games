@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From Pixels to Dimensions: A Game Math Journey</title>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: #111827;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-pink: #f472b6;
+            --accent-yellow: #fbbf24;
+            --accent-red: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body, html {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Top Navigation Header */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #111827;
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-blue);
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            height: 100%;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-links button {
+            background: transparent;
+            border: none;
+            height: 100%;
+            padding: 0 12px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: color 0.2s, border-bottom 0.2s;
+        }
+
+        .nav-links button:hover, .nav-links button.active {
+            color: var(--text-main);
+            border-bottom: 3px solid var(--accent-blue);
+        }
+
+        /* Slide Deck Framework */
+        .slide-container {
+            width: 100%;
+            height: calc(100vh - 60px);
+            margin-top: 60px;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .slide-content {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .info-column {
+            flex: 1;
+            max-width: 45%;
+        }
+
+        .demo-column {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Typography */
+        .section-tag {
+            display: inline-block;
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: #1e293b;
+            color: var(--accent-blue);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            border: 1px solid #334155;
+        }
+
+        h1.title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .desc-text {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        /* Interactive Controls */
+        .control-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .control-row {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+            background: #374151;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        select {
+            width: 100%;
+            background: #1f2937;
+            color: #fff;
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: var(--accent-blue);
+            color: #020617;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-fire {
+            background-color: var(--accent-red);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-fire:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+        }
+
+        .btn-outline.active {
+            background: var(--accent-blue);
+            color: #020617;
+            border-color: var(--accent-blue);
+        }
+
+        /* Live Data Readouts */
+        .telemetry-box {
+            font-family: 'Courier New', Courier, monospace;
+            background: #020617;
+            border-left: 4px solid var(--accent-pink);
+            border-radius: 0 6px 6px 0;
+            padding: 15px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            width: 100%;
+        }
+
+        .highlight-blue { color: var(--accent-blue); font-weight: bold; }
+        .highlight-green { color: var(--accent-green); font-weight: bold; }
+        .highlight-pink { color: var(--accent-pink); font-weight: bold; }
+        .highlight-yellow { color: var(--accent-yellow); font-weight: bold; }
+
+        /* Canvas Displays */
+        .canvas-wrapper {
+            background: #030712;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background: #020617;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-title">🎮 From Pixels to Dimensions</div>
+            <ul class="nav-links">
+                <li><button id="tab-intro" class="nav-btn active" onclick="showSlide('intro')">Intro</button></li>
+                <li><button id="tab-frame1" class="nav-btn" onclick="showSlide('frame1')">1. Collisions</button></li>
+                <li><button id="tab-frame2" class="nav-btn" onclick="showSlide('frame2')">2. Transformations</button></li>
+                <li><button id="tab-frame3" class="nav-btn" onclick="showSlide('frame3')">3. Projectiles</button></li>
+                <li><button id="tab-frame4" class="nav-btn" onclick="showSlide('frame4')">4. Distance</button></li>
+                <li><button id="tab-frame5" class="nav-btn" onclick="showSlide('frame5')">5. Hierarchy</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="slide-container">
+        
+        <div id="intro" class="slide active">
+            <div class="slide-content" style="max-width: 1100px;">
+                <div class="info-column" style="max-width: 55%;">
+                    <span class="section-tag">MY STORY AT AGE 13</span>
+                    <h1 class="title" style="font-size: 3rem;">How Math Unlocked My Dream of Making Games</h1>
+                    <p class="desc-text">
+                        When I was 13 years old sitting in a math classroom, I loved video games and desperately wanted to program them myself. But I ran into a major obstacle: <strong>Computers don't inherently understand what space is.</strong>
+                    </p>
+                    <p class="desc-text">
+                        They don't inherently understand walls, character rotation, or weapon ranges. Every time I wanted to figure out if Pac-Man hit a boundary, or how an Asteroids ship turned, I discovered that the answers were sitting right on the dry-erase board in math class.
+                    </p>
+                    <p class="desc-text" style="color: var(--accent-blue); font-weight: 600;">
+                        Use the menu buttons above or press PageUp / PageDown on your keyboard to navigate the lesson!
+                    </p>
+                </div>
+                <div class="demo-column" style="max-width: 45%;">
+                    <div class="control-panel" style="padding: 40px; background: var(--panel-bg); border-color: #334155;">
+                        <h3 style="color: var(--accent-pink); margin-bottom: 15px; font-family: monospace;">// The Core Lesson</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 15px; color: #cbd5e1;">
+                            "Video games aren't magic visual engines. They are just <strong>Coordinate Planes, Functions, and Geometry</strong> evaluating 60 times every single second."
+                        </p>
+                        <hr style="border-color: var(--border); margin: 20px 0;">
+                        <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
+                            <p><strong style="color: #fff;">Step 1:</strong> Tile Map Matrices vs Flawed Pixel Sampling</p>
+                            <p><strong style="color: #fff;">Step 2:</strong> Translating, Rotating, and Flipping Coordinate Shapes</p>
+                            <p><strong style="color: #fff;">Step 3:</strong> Breaking Angles into X/Y Vectors with Trigonometry</p>
+                            <p><strong style="color: #fff;">Step 4:</strong> Using Pythagoras to Measure 2D Space Proximity</p>
+                            <p><strong style="color: #fff;">Step 5:</strong> Matrix Nesting & Hierarchical Skeletal Animation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="frame1" class="slide">
+            <div class="slide-content">
+                <div class="info-column">
+                    <span class="section-tag">MAP ARCHITECTURE</span>
+                    <h1 class="title">1. Handling Boundaries: Grids vs. Pixels</h1>
+                    <p class="desc-text">
+                        When I started, I tried reading actual <strong>pixel colors</strong> to see if a player hit a wall. But if the game lagged or the character moved too fast, it would glitch completely through.
+                    </p>
+                    <p class="desc-text">
+                        The math solution is a <strong>Functional Grid System</strong>. We map the game world into a 2D matrix array where every grid cell coordinate (x, y) outputs a specific value: 0 for empty paths, and 1 for solid walls.
+                    </p>
+                    <div class="control-panel">
+                        <label>Movement Input Controls (Or Use Keyboard Arrow Keys)</label>
+                        <div class="btn-group">
+                            <button class="btn" onclick="moveFrame1(-1, 0)">◀ Left</button>
+                            <button class="btn" onclick="moveFrame1(1, 0)">Right ▶</button>
+                            <button class="btn" onclick="moveFrame1(0, -1)">▲ Up</button>
+                            <button class="btn" onclick="moveFrame1(0, 1)">▼ Down</button>
+                        </div>
+                        <label>Collision Strategy Engine Mode</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btnModeGrid" class="btn-outline active" onclick="setFrame1Mode('grid')">Tile-Grid Matrix Lookup</button>
+                            <button id="btnModePixel" class="btn-outline" onclick="setFrame1Mode('pixel')">Volatile Pixel Color Check</button>
+                        </div>
+                    </div>
+                    <div class="telemetry-box" id="telemetry1">Initializing data system...</div>
+                </div>
+                <div class="demo-column">
+                    <div class="canvas-wrapper"><canvas id="canvas1" width="500" height="400"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="frame2" class="slide">
+            <div class="slide-content">
+                <div class="info-column">
+                    <span class="section-tag">RIGID MOTION GRAPHICS</span>
+                    <h1 class="title">2. Coordinate Transformations</h1>
+                    <p class="desc-text">
+                        In vector arcade games like <em>Asteroids</em>, ships and obstacles are shapes defined by geometric point vertices on a grid coordinate graph layout. 
+                    </p>
+                    <p class="desc-text">
+                        To manipulate objects smoothly, the engine uses core rules: <strong>Translation</strong> modifies coordinates to move the ship, <strong>Rotation</strong> spins it around an origin pivot point, and <strong>Reflection</strong> instantly flips scale parameters across an axis line.
+                    </p>
+                    <div class="control-panel">
+                        <div class="control-row">
+                            <label for="slideRot2">Rotation Offset (θ Angle): <span id="valRot2" class="highlight-green">0°</span></label>
+                            <input type="range" id="slideRot2" min="0" max="360" value="0">
+                        </div>
+                        <div class="control-row">
+                            <label for="slideTX2">Horizontal Translation (Ship X Axis): <span id="valTX2" class="highlight-blue">180</span></label>
+                            <input type="range" id="slideTX2" min="50" max="320" value="180">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-outline active" onclick="toggleReflection2()">Execute Matrix Reflection Flip</button>
+                            <button class="btn-fire" onclick="fireLaserFrame2()">💥 FIRE ANGULAR LASER</button>
+                        </div>
+                    </div>
+                    <div class="telemetry-box" id="telemetry2">Initializing data system...</div>
+                </div>
+                <div class="demo-column">
+                    <div class="canvas-wrapper"><canvas id="canvas2" width="500" height="400"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="frame3" class="slide">
+            <div class="slide-content">
+                <div class="info-column">
+                    <span class="section-tag">VECTOR BALLISTICS</span>
+                    <h1 class="title">3. Vector Splitting & Parabolas</h1>
+                    <p class="desc-text">
+                        When aiming a defense turret or firing a missile, a player chooses an angle and speed. How does a computer use that information to change positions?
+                    </p>
+                    <p class="desc-text">
+                        We use trigonometric ratios to split speed into component forces: horizontal speed becomes Vx = Speed × cos(θ), and vertical speed is Vy = Speed × sin(θ). Gravity then subtracts values from Vy linearly, turning a straight launch vector into a quadratic parabola trajectory.
+                    </p>
+                    <div class="control-panel">
+                        <div class="control-row">
+                            <label for="slideAngle3">Launcher Launch Angle (θ): <span id="valAngle3" class="highlight-pink">45°</span></label>
+                            <input type="range" id="slideAngle3" min="5" max="85" value="45">
+                        </div>
+                        <div class="control-row">
+                            <label for="slidePower3">Initial Launch Speed Magnitude: <span id="valPower3" class="highlight-blue">14</span></label>
+                            <input type="range" id="slidePower3" min="5" max="20" value="14">
+                        </div>
+                        <div class="control-row">
+                            <button class="btn" onclick="fireFrame3()">Launch Projectile Vector</button>
+                        </div>
+                    </div>
+                    <div class="telemetry-box" id="telemetry3">Initializing data system...</div>
+                </div>
+                <div class="demo-column">
+                    <div class="canvas-wrapper"><canvas id="canvas3" width="500" height="400"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="frame4" class="slide">
+            <div class="slide-content">
+                <div class="info-column">
+                    <span class="section-tag">PROXIMITY RADAR</span>
+                    <h1 class="title">4. Distance Tracking & Collisions</h1>
+                    <p class="desc-text">
+                        How does a game engine calculate if a player is close enough to collect a coin, hit an enemy, or trigger an explosion? It relies completely on the Pythagorean Theorem.
+                    </p>
+                    <p class="desc-text">
+                        By measuring horizontal difference (Δx) and vertical difference (Δy) between the center point vertices of both entities, we compute a² + b² = c². If the length of the hypotenuse (c) is less than or equal to the sum of both circle radii, a solid intersection registers!
+                    </p>
+                    <div class="control-panel" style="padding: 25px;">
+                        <p style="font-size: 1rem; color: var(--accent-blue); font-weight: 600;">
+                            💡 Live Interactive Sandbox:
+                        </p>
+                        <p style="font-size: 0.95rem; margin-top: 4px; color: var(--text-muted);">
+                            Click and drag the pink target circle around the canvas coordinates plane space on the right to see the triangle update and trigger collisions live!
+                        </p>
+                    </div>
+                    <div class="telemetry-box" id="telemetry4">Initializing data system...</div>
+                </div>
+                <div class="demo-column">
+                    <div class="canvas-wrapper"><canvas id="canvas4" width="500" height="400"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="frame5" class="slide">
+            <div class="slide-content">
+                <div class="info-column">
+                    <span class="section-tag">HIERARCHICAL SYSTEMS</span>
+                    <h1 class="title">5. Nested Matrix Kinematics</h1>
+                    <p class="desc-text">
+                        To animate a character, we group bones in a parent-child tree hierarchy. When a parent node (like the shoulder joint) is rotated, all children (upper arm, elbow, forearm, hands) automatically inherit that spatial transformation state.
+                    </p>
+                    <div class="control-panel">
+                        <div class="control-row">
+                            <label>Rig Animation Selection State</label>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="animModePose" class="btn-outline active" onclick="setFrame5Mode('pose')">Static Pose Rig</button>
+                                <button id="animModeWalk" class="btn-outline" onclick="setFrame5Mode('walk')">Walk Loop</button>
+                                <button id="animModeFloss" class="btn-outline" onclick="setFrame5Mode('floss')">🕺 FLOSS DANCE</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="manualBoneRow">
+                            <label for="jointSelect">Select Rig Joint Pivot to Rotate:</label>
+                            <select id="jointSelect" onchange="syncFrame5Slider()">
+                                <option value="hips">Pelvis / Hips Center</option>
+                                <option value="spine">Spine Chest Vertex</option>
+                                <option value="leftShoulder">Left Shoulder Joint</option>
+                                <option value="leftElbow">Left Elbow Joint</option>
+                                <option value="rightShoulder">Right Shoulder Joint</option>
+                                <option value="rightElbow">Right Elbow Joint</option>
+                                <option value="leftHip">Left Thigh Joint</option>
+                                <option value="leftKnee">Left Knee Joint</option>
+                                <option value="rightHip">Right Thigh Joint</option>
+                                <option value="rightKnee">Right Knee Joint</option>
+                            </select>
+                            <label for="slideBone5" style="margin-top: 10px;">Joint Transformation Angle: <span id="valBone5" class="highlight-green">0°</span></label>
+                            <input type="range" id="slideBone5" min="-120" max="120" value="0">
+                        </div>
+                    </div>
+                    <div class="telemetry-box" id="telemetry5">Initializing data system...</div>
+                </div>
+                <div class="demo-column">
+                    <div class="canvas-wrapper"><canvas id="canvas5" width="500" height="400"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DECK ENGINE ROUTER CONSTANTS
+        const slideOrder = ['intro', 'frame1', 'frame2', 'frame3', 'frame4', 'frame5'];
+        let activeSlide = 'intro';
+
+        function showSlide(slideId) {
+            activeSlide = slideId;
+            document.querySelectorAll('.slide').forEach(slide => slide.classList.remove('active'));
+            document.querySelectorAll('.nav-links button').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(slideId).classList.add('active');
+            document.getElementById('tab-' + slideId).classList.add('active');
+            
+            // Clean hook overrides when switching contexts
+            if(slideId !== 'frame5') {
+                f5Mode = 'pose';
+                cancelAnimationFrame(f5AnimId);
+            } else {
+                setFrame5Mode(f5Mode);
+            }
+        }
+
+        // UNIFIED KEYBOARD INPUT MONITOR
+        window.addEventListener('keydown', function(e) {
+            if (activeSlide === 'frame1') {
+                if (e.key === 'ArrowLeft')  { moveFrame1(-1, 0); e.preventDefault(); return; }
+                if (e.key === 'ArrowRight') { moveFrame1(1, 0);  e.preventDefault(); return; }
+                if (e.key === 'ArrowUp')    { moveFrame1(0, -1); e.preventDefault(); return; }
+                if (e.key === 'ArrowDown')  { moveFrame1(0, 1);  e.preventDefault(); return; }
+            }
+
+            let currentIndex = slideOrder.indexOf(activeSlide);
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                if (currentIndex < slideOrder.length - 1) {
+                    showSlide(slideOrder[currentIndex + 1]);
+                }
+            }
+            if (e.key === 'PageUp') {
+                e.preventDefault();
+                if (currentIndex > 0) {
+                    showSlide(slideOrder[currentIndex - 1]);
+                }
+            }
+        });
+
+        // ==========================================
+        // MODULE 1: GRID MATRIX COLLISION
+        // ==========================================
+        const canvas1 = document.getElementById('canvas1');
+        const ctx1 = canvas1.getContext('2d');
+        let f1Player = { gridX: 1, gridY: 1, realX: 75, realY: 75 };
+        let f1Mode = 'grid';
+        const f1TileSize = 50;
+
+        const f1Grid = [
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,0,1,0,0,0,0,0,0,1],
+            [1,0,1,0,1,1,1,1,0,1],
+            [1,0,0,0,1,0,0,1,0,1],
+            [1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,0,1,0,0,1],
+            [1,0,1,1,1,0,0,0,1,1],
+            [1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        function setFrame1Mode(mode) {
+            f1Mode = mode;
+            document.getElementById('btnModeGrid').classList.remove('active');
+            document.getElementById('btnModePixel').classList.remove('active');
+            if(mode === 'grid') document.getElementById('btnModeGrid').classList.add('active');
+            else document.getElementById('btnModePixel').classList.add('active');
+            resetPlayerFrame1();
+        }
+
+        function resetPlayerFrame1() {
+            f1Player.gridX = 1; f1Player.gridY = 1;
+            f1Player.realX = 75; f1Player.realY = 75;
+            updateFrame1Telemetry("Engine Mode Swapped.");
+            renderFrame1();
+        }
+
+        function updateFrame1Telemetry(statusMsg) {
+            document.getElementById('telemetry1').innerHTML = `
+                [GRID MATRIX]: Matrix Map Slot Position: (x: <span class='highlight-blue'>${f1Player.gridX}</span>, y: <span class='highlight-blue'>${f1Player.gridY}</span>)<br>
+                [PIXEL SCANNER]: Screenspace Position: (x: <span class='highlight-pink'>${f1Player.realX}</span>, y: <span class='highlight-pink'>${f1Player.realY}</span>)<br>
+                <strong>System Output:</strong> ${statusMsg}
+            `;
+        }
+
+        function moveFrame1(dx, dy) {
+            if (f1Mode === 'grid') {
+                let targetX = f1Player.gridX + dx;
+                let targetY = f1Player.gridY + dy;
+                if (f1Grid[targetY] && f1Grid[targetY][targetX] === 0) {
+                    f1Player.gridX = targetX; f1Player.gridY = targetY;
+                    f1Player.realX = targetX * f1TileSize + f1TileSize/2;
+                    f1Player.realY = targetY * f1TileSize + f1TileSize/2;
+                    updateFrame1Telemetry("<span class='highlight-green'>Move Allowed!</span> Grid position lookup array contains empty slot data value (0).");
+                } else {
+                    updateFrame1Telemetry("<span class='highlight-pink'>Block Triggered!</span> Matrix state match prevents player translation.");
+                }
+            } else {
+                f1Player.realX += dx * 35; f1Player.realY += dy * 35;
+                f1Player.gridX = Math.floor(f1Player.realX / f1TileSize);
+                f1Player.gridY = Math.floor(f1Player.realY / f1TileSize);
+                if (f1Grid[f1Player.gridY] && f1Grid[f1Player.gridY][f1Player.gridX] === 1) {
+                    updateFrame1Telemetry("<span class='highlight-yellow'>⚠️ GLITCH OCCURRED:</span> Traversed through boundary! Single-point canvas pixel test missed fast intersection speed frame.");
+                } else {
+                    updateFrame1Telemetry("Moving player node across continuous raw screenspace values...");
+                }
+            }
+            renderFrame1();
+        }
+
+        function renderFrame1() {
+            ctx1.clearRect(0,0,500,400);
+            
+            const lineWidth = 2;
+            ctx1.lineWidth = lineWidth;
+
+            for(let r=0; r<f1Grid.length; r++) {
+                for(let c=0; c<f1Grid[r].length; c++) {
+                    let drawX = c * f1TileSize;
+                    let drawY = r * f1TileSize;
+                    let width = f1TileSize;
+                    let height = f1TileSize;
+
+                    if (c === 0) { drawX += lineWidth/2; width -= lineWidth/2; }
+                    if (c === 9) { width -= lineWidth/2; }
+                    if (r === 0) { drawY += lineWidth/2; height -= lineWidth/2; }
+                    if (r === 7) { height -= lineWidth/2; }
+
+                    if(f1Grid[r][c] === 1) {
+                        ctx1.fillStyle = '#374151'; 
+                        ctx1.fillRect(drawX, drawY, width, height);
+                        ctx1.strokeStyle = '#1f2937'; 
+                        ctx1.strokeRect(drawX, drawY, width, height);
+                    } else {
+                        ctx1.strokeStyle = 'rgba(55, 65, 81, 0.1)'; 
+                        ctx1.strokeRect(drawX, drawY, width, height);
+                    }
+                }
+            }
+            ctx1.fillStyle = '#38bdf8'; ctx1.beginPath(); ctx1.arc(f1Player.realX, f1Player.realY, 14, 0, Math.PI*2); ctx1.fill();
+            ctx1.strokeStyle = '#fff'; ctx1.lineWidth = 2; ctx1.stroke();
+        }
+
+        // ==========================================
+        // MODULE 2: TRANSFORMATIONS
+        // ==========================================
+        const canvas2 = document.getElementById('canvas2');
+        const ctx2 = canvas2.getContext('2d');
+        let f2Reflected = false;
+        
+        let f2Laser = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, dx: 0, dy: 0 };
+        let f2RockDestroyed = false;
+        let f2ExplosionTimer = 0;
+        let f2Fragments = []; 
+
+        const slideRot2 = document.getElementById('slideRot2');
+        const slideTX2 = document.getElementById('slideTX2');
+
+        const rockVertices = [
+            {x: 0, y: -30}, {x: 25, y: -20}, {x: 35, y: 5}, {x: 15, y: 35},
+            {x: -20, y: 25}, {x: -30, y: -5}, {x: -10, y: -15}
+        ];
+
+        function toggleReflection2() { f2Reflected = !f2Reflected; if(!f2Laser.active && !f2RockDestroyed) renderFrame2(); }
+
+        function fireLaserFrame2() {
+            if (f2Laser.active || f2RockDestroyed) return;
+            
+            const rotDeg = parseInt(slideRot2.value);
+            let rotRad = rotDeg * Math.PI / 180;
+            
+            const tx = parseInt(slideTX2.value);
+            const ty = 200;
+
+            let localNoseX = 30;
+            let localNoseY = 0;
+            
+            let activeRenderRad = f2Reflected ? -rotRad : rotRad;
+
+            f2Laser.startX = tx + (localNoseX * Math.cos(activeRenderRad) - localNoseY * Math.sin(activeRenderRad));
+            f2Laser.startY = ty + (localNoseX * Math.sin(activeRenderRad) + localNoseY * Math.cos(activeRenderRad));
+            
+            f2Laser.currentX = f2Laser.startX;
+            f2Laser.currentY = f2Laser.startY;
+
+            f2Laser.dx = Math.cos(activeRenderRad) * 12;
+            f2Laser.dy = Math.sin(activeRenderRad) * 12;
+            f2Laser.active = true;
+            
+            animateLaserFrame2();
+        }
+
+        function animateLaserFrame2() {
+            if (!f2Laser.active) return;
+            
+            f2Laser.currentX += f2Laser.dx;
+            f2Laser.currentY += f2Laser.dy;
+            
+            let rockCenterValues = { x: 410, y: 200 };
+            let rockBoundRadius = 35;
+
+            let targetDistance = Math.hypot(f2Laser.currentX - rockCenterValues.x, f2Laser.currentY - rockCenterValues.y);
+
+            if (!f2RockDestroyed && targetDistance <= rockBoundRadius) {
+                f2Laser.active = false;
+                triggerRockExplosion();
+                return;
+            }
+
+            if (f2Laser.currentX < 0 || f2Laser.currentX > 500 || f2Laser.currentY < 0 || f2Laser.currentY > 400) {
+                f2Laser.active = false;
+            }
+
+            renderFrame2();
+            if (f2Laser.active) requestAnimationFrame(animateLaserFrame2);
+        }
+
+        function triggerRockExplosion() {
+            f2RockDestroyed = true;
+            f2ExplosionTimer = 1.0; 
+            f2Fragments = [];
+
+            for (let i = 0; i < rockVertices.length; i++) {
+                let p1 = rockVertices[i];
+                let p2 = rockVertices[(i + 1) % rockVertices.length];
+                
+                let midX = (p1.x + p2.x) / 2;
+                let midY = (p1.y + p2.y) / 2;
+
+                f2Fragments.push({
+                    x1: p1.x - midX, y1: p1.y - midY,
+                    x2: p2.x - midX, y2: p2.y - midY,
+                    posX: 410 + midX,
+                    posY: f2Reflected ? 200 - midY : 200 + midY,
+                    vx: (Math.random() - 0.5) * 5 + f2Laser.dx * 0.2, 
+                    vy: (Math.random() - 0.5) * 5 + f2Laser.dy * 0.2,
+                    angle: 0,
+                    vRot: (Math.random() - 0.5) * 0.15
+                });
+            }
+            animateExplosionFrame2();
+        }
+
+        function animateExplosionFrame2() {
+            if (!f2RockDestroyed) return;
+            f2ExplosionTimer -= 0.015; 
+
+            for (let f of f2Fragments) {
+                f.posX += f.vx; f.posY += f.vy; f.angle += f.vRot;
+            }
+
+            renderFrame2();
+
+            if (f2ExplosionTimer <= 0) {
+                f2RockDestroyed = false;
+                renderFrame2();
+            } else {
+                requestAnimationFrame(animateExplosionFrame2);
+            }
+        }
+
+        function renderFrame2() {
+            const rotDeg = parseInt(slideRot2.value);
+            const tx = parseInt(slideTX2.value);
+            const ty = 200;
+            const rotRad = rotDeg * Math.PI / 180;
+
+            document.getElementById('valRot2').innerText = rotDeg + "°";
+            document.getElementById('valTX2').innerText = tx;
+            ctx2.clearRect(0,0,500,400);
+
+            // 1. Draw Reflection Line Axis
+            ctx2.strokeStyle = '#334155'; ctx2.lineWidth = 1; ctx2.setLineDash([6, 4]);
+            ctx2.beginPath(); ctx2.moveTo(0, ty); ctx2.lineTo(500, ty); ctx2.stroke();
+            ctx2.setLineDash([]); 
+
+            // 2. Draw Ship
+            ctx2.save();
+            ctx2.translate(tx, ty);
+            ctx2.rotate(rotRad);
+            if(f2Reflected) ctx2.scale(1, -1);
+
+            ctx2.strokeStyle = '#4ade80'; ctx2.fillStyle = 'rgba(74, 222, 128, 0.05)'; ctx2.lineWidth = 2.5;
+            ctx2.beginPath(); 
+            ctx2.moveTo(30, 0); ctx2.lineTo(-20, -18); ctx2.lineTo(-10, 0); ctx2.lineTo(-20, 18);  
+            ctx2.closePath(); ctx2.stroke(); ctx2.fill();
+            ctx2.restore();
+
+            // 3. Draw Laser Bolt
+            if (f2Laser.active) {
+                ctx2.strokeStyle = '#ef4444'; ctx2.lineWidth = 4;
+                ctx2.beginPath(); 
+                ctx2.moveTo(f2Laser.currentX - f2Laser.dx, f2Laser.currentY - f2Laser.dy); 
+                ctx2.lineTo(f2Laser.currentX, f2Laser.currentY); 
+                ctx2.stroke();
+            }
+
+            // 4. Draw Stationary Asteroid
+            if (!f2RockDestroyed) {
+                ctx2.save();
+                ctx2.translate(410, ty); 
+                if(f2Reflected) ctx2.scale(1, -1);
+
+                ctx2.strokeStyle = '#fbbf24'; ctx2.fillStyle = 'rgba(251, 191, 36, 0.05)'; ctx2.lineWidth = 2.5;
+                ctx2.beginPath();
+                ctx2.moveTo(rockVertices[0].x, rockVertices[0].y);
+                for(let i=1; i<rockVertices.length; i++) {
+                    ctx2.lineTo(rockVertices[i].x, rockVertices[i].y);
+                }
+                ctx2.closePath(); ctx2.stroke(); ctx2.fill();
+                ctx2.restore();
+            } else {
+                ctx2.save();
+                ctx2.strokeStyle = `rgba(251, 191, 36, ${f2ExplosionTimer})`; ctx2.lineWidth = 2.5;
+                for (let f of f2Fragments) {
+                    ctx2.save(); ctx2.translate(f.posX, f.posY); ctx2.rotate(f.angle);
+                    ctx2.beginPath(); ctx2.moveTo(f.x1, f.y1); ctx2.lineTo(f.x2, f.y2); ctx2.stroke();
+                    ctx2.restore();
+                }
+                ctx2.restore();
+            }
+
+            document.getElementById('telemetry2').innerHTML = `
+                Horizontal Translation (Ship position X): <span class='highlight-blue'>${tx} px</span><br>
+                Rotational Vector Pivot Transformation (Ship Angle θ): <span class='highlight-green'>${rotDeg}°</span><br>
+                Laser System: Direction matched to vector angles. Target Hit requires proper proximity alignment.
+            `;
+        }
+
+        slideRot2.addEventListener('input', renderFrame2);
+        slideTX2.addEventListener('input', renderFrame2);
+
+        // ==========================================
+        // MODULE 3: TRIGONOMETRY POLAR SPLITTING
+        // ==========================================
+        const canvas3 = document.getElementById('canvas3');
+        const ctx3 = canvas3.getContext('2d');
+        let f3Ball = { x: 50, y: 350, vx: 0, vy: 0, live: false };
+        let f3PathHistory = [];
+        const slideAngle3 = document.getElementById('slideAngle3');
+        const slidePower3 = document.getElementById('slidePower3');
+
+        function fireFrame3() {
+            if (f3Ball.live) return;
+            const deg = parseInt(slideAngle3.value);
+            const rad = deg * Math.PI / 180;
+            const magnitude = parseInt(slidePower3.value);
+
+            f3Ball.x = 50; f3Ball.y = 350;
+            f3Ball.vx = magnitude * Math.cos(rad) * 0.45;
+            f3Ball.vy = -magnitude * Math.sin(rad) * 0.45;
+            f3Ball.live = true;
+            f3PathHistory = [];
+            animateFrame3();
+        }
+
+        function animateFrame3() {
+            if (!f3Ball.live) return;
+            f3Ball.x += f3Ball.vx; f3Ball.vy += 0.075; f3Ball.y += f3Ball.vy;
+            f3PathHistory.push({ x: f3Ball.x, y: f3Ball.y });
+            if (f3Ball.y >= 350 || f3Ball.x > 500) { f3Ball.live = false; f3Ball.y = 350; }
+            renderFrame3();
+            if (f3Ball.live) requestAnimationFrame(animateFrame3);
+        }
+
+        function renderFrame3() {
+            const deg = parseInt(slideAngle3.value);
+            const magnitude = parseInt(slidePower3.value);
+            document.getElementById('valAngle3').innerText = deg + "°";
+            document.getElementById('valPower3').innerText = magnitude;
+            ctx3.clearRect(0,0,500,400);
+
+            ctx3.strokeStyle = '#1f2937'; ctx3.lineWidth = 3;
+            ctx3.beginPath(); ctx3.moveTo(0,350); ctx3.lineTo(500,350); ctx3.stroke();
+
+            ctx3.strokeStyle = 'rgba(244, 114, 182, 0.45)'; ctx3.lineWidth = 2;
+            ctx3.beginPath();
+            if(f3PathHistory.length > 0) ctx3.moveTo(f3PathHistory[0].x, f3PathHistory[0].y);
+            for(let p of f3PathHistory) ctx3.lineTo(p.x, p.y);
+            ctx3.stroke();
+
+            ctx3.fillStyle = '#f472b6'; ctx3.beginPath(); ctx3.arc(f3Ball.x, f3Ball.y, 7, 0, Math.PI*2); ctx3.fill();
+
+            document.getElementById('telemetry3').innerHTML = `
+                Horizontal Component Force Rate (Vx): Velocity × cos(θ) → <span class='highlight-blue'>+${(magnitude * Math.cos(deg*Math.PI/180)).toFixed(2)} px/frame</span><br>
+                Vertical Component Force Rate (Vy): Velocity × sin(θ) → <span class='highlight-pink'>-${(magnitude * Math.sin(deg*Math.PI/180)).toFixed(2)} px/frame</span>
+            `;
+        }
+
+        slideAngle3.addEventListener('input', renderFrame3);
+        slidePower3.addEventListener('input', renderFrame3);
+
+        // ==========================================
+        // MODULE 4: PYTHAGOREAN PROXIMITY SENSOR
+        // ==========================================
+        const canvas4 = document.getElementById('canvas4');
+        const ctx4 = canvas4.getContext('2d');
+
+        let f4Source = { x: 160, y: 240, radius: 45 }; 
+        let f4Target = { x: 340, y: 140, radius: 35 }; 
+        let f4Dragging = false;
+
+        function renderFrame4() {
+            ctx4.clearRect(0,0,500,400);
+
+            let deltaX = f4Target.x - f4Source.x;
+            let deltaY = f4Source.y - f4Target.y; 
+            
+            let distance2D = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+            let radiiSum = f4Source.radius + f4Target.radius;
+            let isColliding = distance2D <= radiiSum;
+
+            // Draw Triangle Reference Lines
+            ctx4.strokeStyle = '#1f2937'; ctx4.lineWidth = 2; ctx4.setLineDash([6, 4]);
+            ctx4.beginPath(); ctx4.moveTo(f4Source.x, f4Source.y); ctx4.lineTo(f4Target.x, f4Source.y); ctx4.stroke();
+            ctx4.beginPath(); ctx4.moveTo(f4Target.x, f4Source.y); ctx4.lineTo(f4Target.x, f4Target.y); ctx4.stroke();
+
+            // Direct Hypotenuse Line
+            ctx4.setLineDash([]); 
+            ctx4.strokeStyle = isColliding ? '#ef4444' : '#38bdf8'; 
+            ctx4.lineWidth = 4;
+            ctx4.beginPath(); ctx4.moveTo(f4Source.x, f4Source.y); ctx4.lineTo(f4Target.x, f4Target.y); ctx4.stroke();
+
+            // Green Circle (Source)
+            ctx4.fillStyle = 'rgba(74, 222, 128, 0.15)'; ctx4.strokeStyle = '#4ade80'; ctx4.lineWidth = 3;
+            ctx4.beginPath(); ctx4.arc(f4Source.x, f4Source.y, f4Source.radius, 0, Math.PI*2); ctx4.fill(); ctx4.stroke();
+            ctx4.fillStyle = '#4ade80'; ctx4.beginPath(); ctx4.arc(f4Source.x, f4Source.y, 5, 0, Math.PI*2); ctx4.fill();
+
+            // Pink Target Circle (Glows red on collision)
+            ctx4.fillStyle = isColliding ? 'rgba(239, 68, 68, 0.65)' : 'rgba(244, 114, 182, 0.15)'; 
+            ctx4.strokeStyle = isColliding ? '#ef4444' : '#f472b6'; 
+            ctx4.lineWidth = 3;
+            ctx4.beginPath(); ctx4.arc(f4Target.x, f4Target.y, f4Target.radius, 0, Math.PI*2); ctx4.fill(); ctx4.stroke();
+            ctx4.fillStyle = '#f472b6'; ctx4.beginPath(); ctx4.arc(f4Target.x, f4Target.y, 5, 0, Math.PI*2); ctx4.fill();
+
+            // Labels
+            ctx4.fillStyle = '#9ca3af'; ctx4.font = 'bold 12px monospace';
+            ctx4.fillText(`Side a (Δx) = ${Math.abs(deltaX)}`, f4Source.x + deltaX/2 - 30, f4Source.y + 20);
+            ctx4.fillText(`Side b (Δy) = ${Math.abs(deltaY)}`, f4Target.x + 15, f4Target.y + deltaY/2 + 5);
+
+            document.getElementById('telemetry4').innerHTML = `
+                Player Radius (r1): <span class='highlight-green'>${f4Source.radius}px</span> | Target Radius (r2): <span class='highlight-pink'>${f4Target.radius}px</span> (Sum: <b>${radiiSum}px</b>)<br>
+                Pythagoras Theorem: a² + b² = c² &rarr; ${Math.abs(deltaX)}² + ${Math.abs(deltaY)}² = c²<br>
+                Computed Straight Line Distance: <span class='highlight-blue'>${distance2D.toFixed(2)} px units</span><br>
+                <strong>Collision Intersection Status:</strong> ${isColliding ? "<span class='highlight-pink'>💥 COLLISION ENGAGED! (Distance ≤ Sum of Radii)</span>" : "<span class='highlight-green'>✅ SAFE (Distance > Sum of Radii)</span>"}
+            `;
+        }
+
+        canvas4.addEventListener('mousedown', (e) => {
+            const rect = canvas4.getBoundingClientRect();
+            const mx = e.clientX - rect.left; 
+            const my = e.clientY - rect.top;
+            
+            if(Math.hypot(mx - f4Target.x, my - f4Target.y) < f4Target.radius + 15) {
+                f4Dragging = true;
+            }
+        });
+
+        canvas4.addEventListener('mousemove', (e) => {
+            if(f4Dragging) {
+                const rect = canvas4.getBoundingClientRect();
+                f4Target.x = Math.max(40, Math.min(460, e.clientX - rect.left));
+                f4Target.y = Math.max(40, Math.min(360, e.clientY - rect.top));
+                renderFrame4();
+            }
+        });
+
+        window.addEventListener('mouseup', () => { f4Dragging = false; });
+
+        // ==========================================
+        // MODULE 5: HIERARCHICAL RIGGED KINEMATICS
+        // ==========================================
+        const canvas5 = document.getElementById('canvas5');
+        const ctx5 = canvas5.getContext('2d');
+        
+        let f5Mode = 'pose'; // 'pose', 'walk', 'floss'
+        let f5AnimId = null;
+        let f5Time = 0;
+
+        // Kinematics local degree values tracker state map
+        let f5SkeletonAngles = {
+            hips: 0, spine: 0,
+            leftShoulder: 25, leftElbow: 30,
+            rightShoulder: -25, rightElbow: -30,
+            leftHip: -15, leftKnee: 20,
+            rightHip: 15, rightKnee: 10
+        };
+
+        const slideBone5 = document.getElementById('slideBone5');
+        const jointSelect = document.getElementById('jointSelect');
+
+        function setFrame5Mode(mode) {
+            f5Mode = mode;
+            document.getElementById('animModePose').classList.remove('active');
+            document.getElementById('animModeWalk').classList.remove('active');
+            document.getElementById('animModeFloss').classList.remove('active');
+            
+            cancelAnimationFrame(f5AnimId);
+
+            if(mode === 'pose') {
+                document.getElementById('animModePose').classList.add('active');
+                document.getElementById('manualBoneRow').style.opacity = "1";
+                document.getElementById('manualBoneRow').style.pointerEvents = "auto";
+                syncFrame5Slider();
+                renderFrame5Static();
+            } else {
+                if (mode === 'walk') document.getElementById('animModeWalk').classList.add('active');
+                if (mode === 'floss') document.getElementById('animModeFloss').classList.add('active');
+                document.getElementById('manualBoneRow').style.opacity = "0.3";
+                document.getElementById('manualBoneRow').style.pointerEvents = "none";
+                animateFrame5Loop();
+            }
+        }
+
+        function syncFrame5Slider() {
+            let key = jointSelect.value;
+            slideBone5.value = f5SkeletonAngles[key];
+            document.getElementById('valBone5').innerText = f5SkeletonAngles[key] + "°";
+        }
+
+        slideBone5.addEventListener('input', function() {
+            if(f5Mode !== 'pose') return;
+            let key = jointSelect.value;
+            f5SkeletonAngles[key] = parseInt(this.value);
+            document.getElementById('valBone5').innerText = this.value + "°";
+            renderFrame5Static();
+        });
+
+        function animateFrame5Loop() {
+            f5Time += 0.07;
+            ctx5.clearRect(0,0,500,400);
+
+            let rigRootX = 250;
+            let rigRootY = 180;
+
+            if (f5Mode === 'walk') {
+                // Procedural Trigonometric Walk Cycle Matching Phase Offsets
+                let angleSwing = Math.sin(f5Time) * 35;
+                
+                f5SkeletonAngles.hips = 0;
+                f5SkeletonAngles.spine = Math.sin(f5Time * 2) * 4;
+                rigRootY += Math.abs(Math.sin(f5Time * 2)) * 6 - 3; // head bob displacement
+
+                f5SkeletonAngles.leftHip = angleSwing;
+                f5SkeletonAngles.leftKnee = Math.max(0, -angleSwing * 1.2);
+                f5SkeletonAngles.rightHip = -angleSwing;
+                f5SkeletonAngles.rightKnee = Math.max(0, angleSwing * 1.2);
+
+                f5SkeletonAngles.leftShoulder = -angleSwing * 0.8;
+                f5SkeletonAngles.leftElbow = 15 + Math.sin(f5Time) * 15;
+                f5SkeletonAngles.rightShoulder = angleSwing * 0.8;
+                f5SkeletonAngles.rightElbow = 15 - Math.sin(f5Time) * 15;
+
+                updateFrame5Telemetry("Walk cycle running thread. Phase-shifted trigonometric outputs driving hips position and limbs variables.");
+            } 
+            else if (f5Mode === 'floss') {
+                // GRAND FINALE: The Fortnite Floss Dance
+                let swayCycle = Math.sin(f5Time); 
+                
+                // Hip shifts side-to-side dynamically
+                rigRootX += swayCycle * 25;
+                f5SkeletonAngles.hips = -swayCycle * 15; // rotate hip base opposite to sway line
+                f5SkeletonAngles.spine = swayCycle * 8;
+
+                // Arm swinging loop logic variables parameters
+                // Hands go from left to right across hips in the OPPOSITE direction of movement from hips
+                let armSwingPhase = Math.sin(f5Time + Math.PI/2); 
+                
+                // Track arm positioning constraints depending on which side of the body the sway loops over
+                if(swayCycle > 0) {
+                    // Left leaning swing posture context: both arms throw leftward
+                    f5SkeletonAngles.leftShoulder = 60 + armSwingPhase * 20;
+                    f5SkeletonAngles.leftElbow = -10;
+                    f5SkeletonAngles.rightShoulder = 80 + armSwingPhase * 15;
+                    f5SkeletonAngles.rightElbow = 40;
+                } else {
+                    // Right leaning swing posture context: both arms throw rightward
+                    f5SkeletonAngles.leftShoulder = -80 + armSwingPhase * 15;
+                    f5SkeletonAngles.leftElbow = -40;
+                    f5SkeletonAngles.rightShoulder = -60 + armSwingPhase * 20;
+                    f5SkeletonAngles.rightElbow = 10;
+                }
+
+                // Small foot bounces matching rhythm metrics loops
+                f5SkeletonAngles.leftHip = 10 + swayCycle * 5;
+                f5SkeletonAngles.leftKnee = 15 - Math.abs(swayCycle) * 10;
+                f5SkeletonAngles.rightHip = -10 + swayCycle * 5;
+                f5SkeletonAngles.rightKnee = 15 - Math.abs(swayCycle) * 10;
+
+                updateFrame5Telemetry("<span class='highlight-pink'>GRAND FINALE ACTIVE:</span> Counter-phase matrix swaying. Hips horizontal translation is synchronized opposite to arm vector trajectories.");
+            }
+
+            drawSkeletonRig(rigRootX, rigRootY);
+            f5AnimId = requestAnimationFrame(animateFrame5Loop);
+        }
+
+        function renderFrame5Static() {
+            ctx5.clearRect(0,0,500,400);
+            updateFrame5Telemetry("Static Pose Engine. Manipulate dropdown menu and angle range sliders to evaluate real-time parent-to-child data inheritance transformations.");
+            drawSkeletonRig(250, 180);
+        }
+
+        function updateFrame5Telemetry(msg) {
+            document.getElementById('telemetry5').innerHTML = `
+                [ROOT TRANSFORMATION MATRIX]: Origin node coordinates tracking at center space.<br>
+                [INHERITANCE MAP]: Hips &rarr; Spine &rarr; Shoulders &rarr; Elbows &rarr; Hands Vector Chain.<br>
+                <strong>System Output Status:</strong> ${msg}
+            `;
+        }
+
+        function drawSkeletonRig(rootX, rootY) {
+            ctx5.lineWidth = 5;
+            ctx5.lineCap = "round";
+
+            // Translate degrees safely into structural rad angles
+            const rRad = (deg) => deg * Math.PI / 180;
+
+            // Global Base Root Anchor Linkage Matrix Point (Hips Center)
+            let hipsX = rootX;
+            let hipsY = rootY;
+
+            // Compute Pelvis / Hip Width Horizon offsets line
+            let hipWidth = 20;
+            let lHipRootX = hipsX - hipWidth;
+            let lHipRootY = hipsY;
+            let rHipRootX = hipsX + hipWidth;
+            let rHipRootY = hipsY;
+
+            // 1. EVALUATE SPINE TRANSFORMATION MATRIX (Parent of Neck, Shoulders, Head)
+            let spineAngle = rRad(f5SkeletonAngles.hips + f5SkeletonAngles.spine);
+            let spineLength = 65;
+            let neckX = hipsX + spineLength * Math.sin(spineAngle);
+            let neckY = hipsY - spineLength * Math.cos(spineAngle);
+
+            // Compute Shoulder horizon line positions offset from top spine neck center point
+            let shoulderWidth = 25;
+            let lShoulderX = neckX - shoulderWidth * Math.cos(spineAngle);
+            let lShoulderY = neckY - shoulderWidth * Math.sin(spineAngle);
+            let rShoulderX = neckX + shoulderWidth * Math.cos(spineAngle);
+            let rShoulderY = neckY + shoulderWidth * Math.sin(spineAngle);
+
+            // Head extension joint offset
+            let headLength = 20;
+            let headX = neckX + headLength * Math.sin(spineAngle);
+            let headY = neckY - headLength * Math.cos(spineAngle);
+
+            // 2. INHERIT LEFT ARM CHAIN TRANSFORMATIONS (Shoulder -> Elbow -> Hand)
+            let lShoulderAngle = spineAngle + rRad(f5SkeletonAngles.leftShoulder);
+            let armLength = 35;
+            let lElbowX = lShoulderX - armLength * Math.sin(lShoulderAngle);
+            let lElbowY = lShoulderY + armLength * Math.cos(lShoulderAngle);
+
+            let lElbowAngle = lShoulderAngle + rRad(f5SkeletonAngles.leftElbow);
+            let lHandX = lElbowX - armLength * Math.sin(lElbowAngle);
+            let lHandY = lElbowY + armLength * Math.cos(lElbowAngle);
+
+            // 3. INHERIT RIGHT ARM CHAIN TRANSFORMATIONS (Shoulder -> Elbow -> Hand)
+            let rShoulderAngle = spineAngle + rRad(f5SkeletonAngles.rightShoulder);
+            let rElbowX = rShoulderX + armLength * Math.sin(rShoulderAngle);
+            let rElbowY = rShoulderY + armLength * Math.cos(rShoulderAngle);
+
+            let rElbowAngle = rShoulderAngle + rRad(f5SkeletonAngles.rightElbow);
+            let rHandX = rElbowX + armLength * Math.sin(rElbowAngle);
+            let rHandY = rElbowY + armLength * Math.cos(rElbowAngle);
+
+            // 4. INHERIT LEFT LEG CHAIN TRANSFORMATIONS (Hip -> Knee -> Foot)
+            let legLength = 40;
+            let lHipAngle = rRad(f5SkeletonAngles.leftHip);
+            let lKneeX = lHipRootX - legLength * Math.sin(lHipAngle);
+            let lKneeY = lHipRootY + legLength * Math.cos(lHipAngle);
+
+            let lKneeAngle = lHipAngle + rRad(f5SkeletonAngles.leftKnee);
+            let lFootX = lKneeX - legLength * Math.sin(lKneeAngle);
+            let lFootY = lKneeY + legLength * Math.cos(lKneeAngle);
+            let lToeX = lFootX - 12; // Flat foot profile lines
+            let lToeY = lFootY;
+
+            // 5. INHERIT RIGHT LEG CHAIN TRANSFORMATIONS (Hip -> Knee -> Foot)
+            let rHipAngle = rRad(f5SkeletonAngles.rightHip);
+            let rKneeX = rHipRootX + legLength * Math.sin(rHipAngle);
+            let rKneeY = rHipRootY + legLength * Math.cos(rHipAngle);
+
+            let rKneeAngle = rHipAngle + rRad(f5SkeletonAngles.rightKnee);
+            let rFootX = rKneeX + legLength * Math.sin(rKneeAngle);
+            let rFootY = rKneeY + legLength * Math.cos(rKneeAngle);
+            let rToeX = rFootX + 12;
+            let rToeY = rFootY;
+
+            // --- DRAW SECTIONS BLOCK ---
+            ctx5.strokeStyle = '#38bdf8'; // Blue bone segments color
+            
+            // Draw Hips Base Bar Leg horizon lines
+            ctx5.beginPath(); ctx5.moveTo(lHipRootX, lHipRootY); ctx5.lineTo(rHipRootX, rHipRootY); ctx5.stroke();
+            // Draw Torso Spine line link
+            ctx5.beginPath(); ctx5.moveTo(hipsX, hipsY); ctx5.lineTo(neckX, neckY); ctx5.stroke();
+            // Draw Shoulder top bar line
+            ctx5.beginPath(); ctx5.moveTo(lShoulderX, lShoulderY); ctx5.lineTo(rShoulderX, rShoulderY); ctx5.stroke();
+
+            // Draw Left Upper & Forearm links
+            ctx5.beginPath(); ctx5.moveTo(lShoulderX, lShoulderY); ctx5.lineTo(lElbowX, lElbowY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(lElbowX, lElbowY); ctx5.lineTo(lHandX, lHandY); ctx5.stroke();
+
+            // Draw Right Upper & Forearm links
+            ctx5.beginPath(); ctx5.moveTo(rShoulderX, rShoulderY); ctx5.lineTo(rElbowX, rElbowY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(rElbowX, rElbowY); ctx5.lineTo(rHandX, rHandY); ctx5.stroke();
+
+            // Draw Left Leg segments
+            ctx5.beginPath(); ctx5.moveTo(lHipRootX, lHipRootY); ctx5.lineTo(lKneeX, lKneeY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(lKneeX, lKneeY); ctx5.lineTo(lFootX, lFootY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(lFootX, lFootY); ctx5.lineTo(lToeX, lToeY); ctx5.stroke(); // Foot segment
+
+            // Draw Right Leg segments
+            ctx5.beginPath(); ctx5.moveTo(rHipRootX, rHipRootY); ctx5.lineTo(rKneeX, rKneeY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(rKneeX, rKneeY); ctx5.lineTo(rFootX, rFootY); ctx5.stroke();
+            ctx5.beginPath(); ctx5.moveTo(rFootX, rFootY); ctx5.lineTo(rToeX, rToeY); ctx5.stroke();
+
+            // Draw Structural Joint Circles (Pink nodes highlight)
+            ctx5.fillStyle = '#f472b6';
+            let jointsArray = [
+                {x: hipsX, y: hipsY}, {x: neckX, y: neckY},
+                {x: lShoulderX, y: lShoulderY}, {x: rShoulderX, y: rShoulderY},
+                {x: lElbowX, y: lElbowY}, {x: rElbowX, y: rElbowY},
+                {x: lKneeX, y: lKneeY}, {x: rKneeX, y: rKneeY}
+            ];
+            for (let j of jointsArray) {
+                ctx5.beginPath(); ctx5.arc(j.x, j.y, 5, 0, Math.PI*2); ctx5.fill();
+            }
+
+            // Draw Hands Nodes explicitly as circles
+            ctx5.fillStyle = '#4ade80';
+            ctx5.beginPath(); ctx5.arc(lHandX, lHandY, 7, 0, Math.PI*2); ctx5.fill();
+            ctx5.beginPath(); ctx5.arc(rHandX, rHandY, 7, 0, Math.PI*2); ctx5.fill();
+
+            // Draw Head circle bubble outline layout
+            ctx5.fillStyle = '#111827'; ctx5.strokeStyle = '#4ade80'; ctx5.lineWidth = 4;
+            ctx5.beginPath(); ctx5.arc(headX, headY - 18, 18, 0, Math.PI*2); ctx5.fill(); ctx5.stroke();
+        }
+
+        // Global Bootstrapper Initializer
+        window.onload = function() {
+            renderFrame1();
+            renderFrame2();
+            renderFrame3();
+            renderFrame4();
+            renderFrame5Static();
+        }
+    </script>
+</body>
+</html>
